@@ -31,7 +31,7 @@ namespace Payments
             {
                 int newSum = Convert.ToInt32(newAdvance.Text);
 
-                SqlCommand command = new SqlCommand($"INSERT INTO [CASH] (theDate, amount, remainder) VALUES ('{DateTime.Today}', '{newSum}', '{newSum}')", sqlConnection);
+                SqlCommand command = new SqlCommand($"INSERT INTO [CASH] (theDate, amount, remainder) VALUES ('{DateTime.Today.ToString("yyyy-MM-dd")}', '{newSum}', '{newSum}')", sqlConnection);
                 if (command.ExecuteNonQuery() == 1)
                 {
                     MessageBox.Show("Приход денег добавлен!", "Успех");
@@ -127,7 +127,7 @@ namespace Payments
             {
                 int newSum = Convert.ToInt32(newOrder.Text);
                 
-                SqlCommand command = new SqlCommand($"INSERT INTO [ORDERS] (theDate, amount, paymentAmount) VALUES ('{DateTime.Today}', '{newSum}', '0')", sqlConnection);
+                SqlCommand command = new SqlCommand($"INSERT INTO [ORDERS] (theDate, amount, paymentAmount) VALUES ('{DateTime.Today.ToString("yyyy-MM-dd")}', '{newSum}', '0')", sqlConnection);
                 if (command.ExecuteNonQuery() == 1)
                 {
                     MessageBox.Show("Заказ добавлен!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
