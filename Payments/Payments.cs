@@ -14,11 +14,8 @@ namespace Payments
  
     public partial class Payments : Form
     {
-        DataBase dataBase = new DataBase();
-        private SqlConnection sqlConnection = null;
-        private SqlCommandBuilder sqlBuilder = null;
-        private SqlDataAdapter sqlDataAdapter = null;
-        private DataSet dataSet = null;
+        IPayRepository payRepository;
+
         public Payments()
         {
             InitializeComponent();
@@ -27,19 +24,28 @@ namespace Payments
 
         private void AddAdvance_Click(object sender, EventArgs e)
         {
-            if (newAdvance.Text != "")
+            if (newAdvance.Text != ""&& newAdvance.Text != "0")
             {
                 int newSum = Convert.ToInt32(newAdvance.Text);
 
-                SqlCommand command = new SqlCommand($"INSERT INTO [CASH] (theDate, amount, remainder) VALUES ('{DateTime.Today.ToString("yyyy-MM-dd")}', '{newSum}', '{newSum}')", sqlConnection);
-                if (command.ExecuteNonQuery() == 1)
+                Cash cash = new Cash()
+
+
+                //SqlCommand command = new SqlCommand($"INSERT INTO [CASH] (theDate, amount, remainder) VALUES ('{DateTime.Today.ToString("yyyy-MM-dd")}', '{newSum}', '{newSum}')", sqlConnection);
+                //if (command.ExecuteNonQuery() == 1)
+                //{
+                //    MessageBox.Show("Приход денег добавлен!", "Успех");
+                //}
+                //else
+
                 {
-                    MessageBox.Show("Приход денег добавлен!", "Успех");
-                }
-                else
-                {
-                    MessageBox.Show("Запись не создана!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                    TheDate = DateTime.Today,
+                    Amount = newSum,
+                    Remainder = newSum
+                };
+                payRepository = new PayRepository();
+                payRepository.InsertCash(cash);
+                
             }
             else
             {
@@ -47,95 +53,44 @@ namespace Payments
             }
             LoadData();
         }
-           
-       
-        
+             
         private void LoadData()
         {
-            try
-            {
-                sqlDataAdapter = new SqlDataAdapter("SELECT number AS Номер, theDate AS Дата, amount AS Сумма, remainder AS Остаток FROM CASH", sqlConnection);
-
-                sqlBuilder = new SqlCommandBuilder(sqlDataAdapter);
-                sqlBuilder.GetInsertCommand();
-                sqlBuilder.GetUpdateCommand();
-
-                dataSet = new DataSet();
-
-                sqlDataAdapter.Fill(dataSet, "CASH");
-
-                dataGridView1.DataSource = dataSet.Tables["CASH"];
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-
-            try
-            {
-                sqlDataAdapter = new SqlDataAdapter("SELECT orderNumber AS Номер, theDate AS Дата, amount AS Сумма, paymentAmount AS 'Сумма Оплаты' FROM ORDERS", sqlConnection);
-
-                sqlBuilder = new SqlCommandBuilder(sqlDataAdapter);
-                sqlBuilder.GetInsertCommand();
-                sqlBuilder.GetUpdateCommand();
-
-                dataSet = new DataSet();
-
-                sqlDataAdapter.Fill(dataSet, "ORDERS");
-
-                dataGridView2.DataSource = dataSet.Tables["ORDERS"];
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-
-            try
-            {
-                sqlDataAdapter = new SqlDataAdapter("SELECT id AS 'Номер платежа', cash AS 'Приход денег', orderNumber AS Заказ, amount AS 'Сумма платежа' FROM PAYMENTS", sqlConnection);
-
-                sqlBuilder = new SqlCommandBuilder(sqlDataAdapter);
-                sqlBuilder.GetInsertCommand();
-                sqlBuilder.GetUpdateCommand();
-
-                dataSet = new DataSet();
-
-                sqlDataAdapter.Fill(dataSet, "PAYMENTS");
-
-                dataGridView3.DataSource = dataSet.Tables["PAYMENTS"];
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            payRepository = new PayRepository();
+            dataGridView1.DataSource = payRepository.SelectCash();
+            dataGridView2.DataSource = payRepository.SelectOrder();
+            dataGridView3.DataSource = payRepository.SelectPayment(); 
         }
 
         private void Payments_Load(object sender, EventArgs e)
         {
-            sqlConnection = new SqlConnection(@"Data Source=DESKTOP-70VDT2H\SQLEXPRESS2;Initial Catalog=PaymentDB;Integrated Security=True");
-            sqlConnection.Open();
             LoadData();
-
         }
 
         private void AddOrder_Click(object sender, EventArgs e)
         {
-            if (newOrder.Text != "")
+            if (newOrder.Text != ""&& newOrder.Text != "0")
             {
                 int newSum = Convert.ToInt32(newOrder.Text);
+
+                Orders order = new Orders()
+
                 
-                SqlCommand command = new SqlCommand($"INSERT INTO [ORDERS] (theDate, amount, paymentAmount) VALUES ('{DateTime.Today.ToString("yyyy-MM-dd")}', '{newSum}', '0')", sqlConnection);
-                if (command.ExecuteNonQuery() == 1)
+                //SqlCommand command = new SqlCommand($"INSERT INTO [ORDERS] (theDate, amount, paymentAmount) VALUES ('{DateTime.Today.ToString("yyyy-MM-dd")}', '{newSum}', '0')", sqlConnection);
+                //if (command.ExecuteNonQuery() == 1)
+                //{
+                //    MessageBox.Show("Заказ добавлен!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //}
+                //else
+
                 {
-                    MessageBox.Show("Заказ добавлен!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Запись не создана!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                    TheDate = DateTime.Today,
+                    Amount = newSum,
+                    PaymentAmount = 0
+                };
+                payRepository = new PayRepository();
+                payRepository.InsertOrder(order);
+                
             }
             else
             {
@@ -163,41 +118,115 @@ namespace Payments
                 int numberAdvance = Convert.ToInt32(textNumberAdvance.Text);
                 int numberOrder = Convert.ToInt32(textNumberOrder.Text);
                 int paymentAmount = Convert.ToInt32(textAmount.Text);
+                int numberRowCash = -1;
+                int numberRowOrder = -1;
 
-
-                SqlCommand command = new SqlCommand("INSERT INTO PAYMENTS(cash, orderNumber, amount) VALUES (@numberCash, @orderNumber, @amount)", sqlConnection);
-                command.Parameters.AddWithValue("@numberCash", numberAdvance);
-                command.Parameters.AddWithValue("@orderNumber", numberOrder);
-                command.Parameters.AddWithValue("@amount", paymentAmount);
-                StringBuilder errorMessages = new StringBuilder();
-
-                try
+                for (int i = 0; i < dataGridView1.RowCount; i++)
                 {
-                    command.ExecuteNonQuery();
-
-                }
-                catch (SqlException ex)
-                {
-                    for (int i = 0; i < ex.Errors.Count; i++)
+                    if (Convert.ToInt32(dataGridView1[0, i].Value) == numberAdvance)
                     {
+                        numberRowCash = i;
+                        break;
+                    }
+                }
 
-                        errorMessages.Append(
-                            ex.Errors[i].Message + "\n");
-                        //"LineNumber: " + ex.Errors[i].LineNumber + "\n" +
-                        //"Source: " + ex.Errors[i].Source + "\n" +
-                        //"Procedure: " + ex.Errors[i].Procedure + "\n");
+                for (int i = 0; i < dataGridView2.RowCount; i++)
+                {
+                    if (Convert.ToInt32(dataGridView2[0, i].Value) == numberOrder)
+                    {
+                        numberRowOrder = i;
+                        break;
+                    }
+                }
 
-                        //if (ex.Errors[i].Number == 547)
-                        //{
-                        //    MessageBox.Show("Вводимого номера заказа и/или прихода денег не существует!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        //    continue;
-                        //}
-                        //else
-                        //{
-                        //    errorMessages.Append(
-                        //    "Message: " + ex.Errors[i].Message + "\n");
-                        //}
-                        MessageBox.Show(errorMessages.ToString(), "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                payRepository = new PayRepository();
+
+                if (dataGridView1[3, numberRowCash].Value.ToString() != payRepository.GetCash(numberAdvance).ToString())
+                {
+                    var result = MessageBox.Show("Остаток прихода денег изменился. Продолжить оплату?", "Произошли изменения", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (result == DialogResult.Yes)
+                    {
+                        StringBuilder errorMessages = new StringBuilder();
+                        try
+                        {
+                            Payment payment = new Payment()
+                            {
+                                Cash = numberAdvance,
+                                OrderNumber = numberOrder,
+                                Amount = paymentAmount
+                            };
+                            payRepository = new PayRepository();
+                            payRepository.InsertPayment(payment);
+                        }
+                        catch (SqlException ex)
+                        {
+                            for (int i = 0; i < ex.Errors.Count; i++)
+                            {
+
+                                errorMessages.Append(
+                                    ex.Errors[i].Message + "\n");
+                                MessageBox.Show(errorMessages.ToString(), "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+                    
+                    LoadData();
+                }
+
+                if (dataGridView2[3, numberRowOrder].Value.ToString() != payRepository.GetOrder(numberOrder).ToString())
+                {
+                    var result = MessageBox.Show("Остаток заказа изменился. Продолжить оплату?", "Произошли изменения", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (result == DialogResult.Yes)
+                    {
+                        StringBuilder errorMessages = new StringBuilder();
+                        try
+                        {
+                            Payment payment = new Payment()
+                            {
+                                Cash = numberAdvance,
+                                OrderNumber = numberOrder,
+                                Amount = paymentAmount
+                            };
+                            payRepository = new PayRepository();
+                            payRepository.InsertPayment(payment);
+                        }
+                        catch (SqlException ex)
+                        {
+                            for (int i = 0; i < ex.Errors.Count; i++)
+                            {
+                                errorMessages.Append(
+                                    ex.Errors[i].Message + "\n");
+
+                                MessageBox.Show(errorMessages.ToString(), "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+                    LoadData();
+                }
+                else
+                {
+                    StringBuilder errorMessages = new StringBuilder();
+                    try
+                    {
+                        Payment payment = new Payment()
+                        {
+                            Cash = numberAdvance,
+                            OrderNumber = numberOrder,
+                            Amount = paymentAmount
+                        };
+                        payRepository = new PayRepository();
+                        payRepository.InsertPayment(payment);
+                    }
+                    catch (SqlException ex)
+                    {
+                        for (int i = 0; i < ex.Errors.Count; i++)
+                        {
+
+                            errorMessages.Append(
+                                ex.Errors[i].Message + "\n");
+
+                            MessageBox.Show(errorMessages.ToString(), "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
                     }
                 }
             }
