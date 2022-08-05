@@ -71,7 +71,7 @@ namespace Payments
                 payRepository = new PayRepository();
                 payRepository.InsertOrder(order);
                 
-                SqlCommand command = new SqlCommand($"INSERT INTO [ORDERS] (theDate, amount, paymentAmount) VALUES ('{DateTime.Today}', '{newSum}', '0')", sqlConnection);
+                SqlCommand command = new SqlCommand($"INSERT INTO [ORDERS] (theDate, amount, paymentAmount) VALUES ('{DateTime.Today}', '{newSum}', '0')");
                 if (command.ExecuteNonQuery() == 1)
                 {
                     MessageBox.Show("Заказ добавлен!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
